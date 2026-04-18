@@ -23,7 +23,7 @@ interface GameStore {
   username: string
   twitchLogin: string
   isTwitchAuth: boolean
-  gamesPlayed: number
+gamesPlayed: number
   bestScore: number
   bestScoreFilm: number
   bestScoreSerial: number
