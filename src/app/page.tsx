@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
+import { movies } from '@/data/movies'
 
 type View = 'home' | 'game' | 'profile' | 'ratings'
 type Mode = 'all' | 'film' | 'serial'
@@ -20,6 +21,8 @@ export default function Home() {
   const [twitchInput, setTwitchInput] = useState('')
   const [twitchLoading, setTwitchLoading] = useState(false)
   const [ratingMode, setRatingMode] = useState<'all' | 'film' | 'serial'>('all')
+  const [searchResults, setSearchResults] = useState<{name: string; year: number; type: string}[]>([])
+  const [showSearch, setShowSearch] = useState(false)
 
   const store = useGameStore()
   const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth } = store
@@ -84,6 +87,25 @@ export default function Home() {
     setView('game')
   }
 
+  const handleAnswerChange = (value: string) => {
+    setAnswer(value)
+    if (value.trim().length >= 1) {
+      const filtered = movies.filter(m => 
+        m.name.toLowerCase().includes(value.toLowerCase()) ||
+        m.aliases.some(a => a.toLowerCase().includes(value.toLowerCase()))
+      ).slice(0, 5)
+      setSearchResults(filtered.map(m => ({ name: m.name, year: m.year, type: m.type })))
+      setShowSearch(true)
+    } else {
+      setShowSearch(false)
+    }
+  }
+
+  const handleSelectResult = (name: string) => {
+    setAnswer(name)
+    setShowSearch(false)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!answer.trim()) {
@@ -94,6 +116,7 @@ export default function Home() {
     const correct = store.answerQuestion(answer)
     setLastAnswerCorrect(correct)
     setShowResult(true)
+    setShowSearch(false)
     setHint(null)
   }
 
@@ -337,11 +360,30 @@ export default function Home() {
                     <input
                       type="text"
                       value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
+                      onChange={(e) => handleAnswerChange(e.target.value)}
+                      onFocus={() => answer.length >= 1 && setShowSearch(true)}
+                      onBlur={() => setTimeout(() => setShowSearch(false), 200)}
                       placeholder="🔍 Название фильма или сериала"
                       className="input w-full pl-12"
                       autoFocus
                     />
+                    {showSearch && searchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20">
+                        {searchResults.map((result, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleSelectResult(result.name)}
+                            className="w-full px-4 py-3 text-left hover:bg-hover flex items-center justify-between"
+                          >
+                            <span>{result.name}</span>
+                            <span className={`tag ${result.type === 'film' ? 'tag-film' : 'tag-serial'}`}>
+                              {result.type === 'film' ? 'Фильм' : 'Сериал'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
