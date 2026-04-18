@@ -126,13 +126,13 @@ export const useGameStore = create<GameStore>()(
         bestScore: 0,
         bestScoreFilm: 0,
         bestScoreSerial: 0,
-        history: [],
+        history: [] as GameResult[],
         isPlaying: false,
         currentQuestion: 0,
         score: 0,
         hintsUsed: 0,
-        questions: [],
-        answers: []
+        questions: [] as Movie[],
+        answers: [] as (boolean | null)[]
       }),
 
       startGame: (mode) => {
@@ -144,7 +144,12 @@ export const useGameStore = create<GameStore>()(
           score: 0,
           hintsUsed: 0,
           questions,
-          answers: []
+          answers: [] as (boolean | null)[],
+          history: [] as GameResult[],
+          gamesPlayed: 0,
+          bestScore: 0,
+          bestScoreFilm: 0,
+          bestScoreSerial: 0
         })
       },
 
