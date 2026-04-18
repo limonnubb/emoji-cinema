@@ -83,6 +83,12 @@ export default function Home() {
       showToast('Введите имя!', 'error')
       return
     }
+    setShowResult(false)
+    setAnswer('')
+    setHint(null)
+    setLastAnswerCorrect(false)
+    setSearchResults([])
+    setShowSearch(false)
     store.startGame(mode)
     setView('game')
   }
@@ -134,6 +140,12 @@ export default function Home() {
 
   const handlePlayAgain = () => {
     setShowEndModal(false)
+    setShowResult(false)
+    setAnswer('')
+    setHint(null)
+    setLastAnswerCorrect(false)
+    setSearchResults([])
+    setShowSearch(false)
     store.startGame('all')
   }
 
