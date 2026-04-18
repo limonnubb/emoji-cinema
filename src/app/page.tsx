@@ -222,22 +222,6 @@ export default function Home() {
               </section>
 
               <section className="mb-8">
-                <h3 className="text-muted text-xs uppercase tracking-widest mb-4 text-center">Как играть</h3>
-                <div className="flex justify-center gap-6">
-                  {[
-                    { icon: '👁️', text: 'Эмодзи' },
-                    { icon: '💡', text: 'Подсказки' },
-                    { icon: '⌨️', text: 'Название' },
-                    { icon: '⭐', text: 'Баллы' }
-                  ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center text-lg">
-                        {item.icon}
-                      </div>
-                      <span className="text-muted text-xs">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
               </section>
 
               <section>
@@ -394,9 +378,22 @@ export default function Home() {
                     >
                       💡 Подсказка {hintsUsed}/3
                     </button>
-                    <button type="submit" className="btn btn-primary flex-1.5">
+                    <button type="submit" className="btn btn-primary flex-1.5 text-base">
                       УГАДАТЬ
                     </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      store.answerQuestion('')
+                      setLastAnswerCorrect(false)
+                      setShowResult(true)
+                      setShowSearch(false)
+                      setHint(null)
+                    }}
+                    className="btn btn-outline w-full text-sm mt-2"
+                  >
+                    Пропустить →
                   </div>
                 </form>
               ) : (
