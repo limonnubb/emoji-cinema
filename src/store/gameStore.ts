@@ -96,7 +96,13 @@ export const useGameStore = create<GameStore>()(
         isTwitchAuth: false,
         gamesPlayed: 0,
         bestScore: 0,
-        history: []
+        history: [],
+        isPlaying: false,
+        currentQuestion: 0,
+        score: 0,
+        hintsUsed: 0,
+        questions: [],
+        answers: []
       }),
 
       startGame: (mode) => {

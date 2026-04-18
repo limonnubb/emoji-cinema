@@ -18,6 +18,7 @@ export default function Home() {
   const [usernameInput, setUsernameInput] = useState('')
   const [showTwitchModal, setShowTwitchModal] = useState(false)
   const [twitchInput, setTwitchInput] = useState('')
+  const [twitchLoading, setTwitchLoading] = useState(false)
 
   const store = useGameStore()
   const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth } = store
@@ -31,6 +32,43 @@ export default function Home() {
       return () => clearTimeout(t)
     }
   }, [toast])
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.substring(1))
+      const token = params.get('access_token')
+      if (token) {
+        fetch('https://api.twitch.tv/helix/users', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Client-Id': 'YOUR_CLIENT_ID'
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.data && data.data[0]) {
+            store.loginWithTwitch(data.data[0].login)
+            showToast(`Добро пожаловать, ${data.data[0].display_name}!`, 'success')
+            window.location.hash = ''
+          }
+        })
+        .catch(() => {
+          showToast('Ошибка Twitch авторизации', 'error')
+        })
+      }
+    }
+  }, [])
+
+  const handleTwitchLogin = () => {
+    setTwitchLoading(true)
+    const clientId = 'YOUR_CLIENT_ID'
+    const redirectUri = encodeURIComponent(window.location.origin)
+    const scope = 'user:read:email'
+    const randomState = Math.random().toString(36).substring(7)
+    
+    window.location.href = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&state=${randomState}`
+  }
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
@@ -184,10 +222,11 @@ export default function Home() {
                   {!store.username ? (
                     <div className="space-y-3">
                       <button
-                        onClick={() => setShowTwitchModal(true)}
+                        onClick={handleTwitchLogin}
+                        disabled={twitchLoading}
                         className="btn btn-purple w-full flex items-center justify-center gap-2"
                       >
-                        <span>🐸</span> Войти через Twitch
+                        <span>🐸</span> {twitchLoading ? 'Перенаправление...' : 'Войти через Twitch'}
                       </button>
                       <div className="text-center text-muted text-xs">или</div>
                       <input
@@ -505,57 +544,6 @@ export default function Home() {
               </button>
               <button onClick={handleGoHome} className="btn btn-secondary w-full">
                 В меню
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTwitchModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="modal-overlay"
-            onClick={() => setShowTwitchModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="modal text-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-5xl mb-4">🐸</div>
-              <h2 className="text-xl font-bold mb-2">Вход через Twitch</h2>
-              <p className="text-muted text-sm mb-4">Введите ваш Twitch логин</p>
-              <input
-                type="text"
-                value={twitchInput}
-                onChange={(e) => setTwitchInput(e.target.value)}
-                placeholder="Twitch логин"
-                className="input w-full mb-4"
-              />
-              <button
-                onClick={() => {
-                  if (twitchInput.trim().length >= 2) {
-                    store.loginWithTwitch(twitchInput.trim())
-                    setShowTwitchModal(false)
-                    showToast(`Добро пожаловать, ${twitchInput}!`, 'success')
-                  } else {
-                    showToast('Минимум 2 символа!', 'error')
-                  }
-                }}
-                className="btn btn-purple w-full mb-3"
-              >
-                Войти
-              </button>
-              <button
-                onClick={() => setShowTwitchModal(false)}
-                className="btn btn-secondary w-full"
-              >
-                Отмена
               </button>
             </motion.div>
           </motion.div>
