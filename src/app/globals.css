@@ -107,7 +107,7 @@ h1, h2, h3 {
   .mode-card {
     @apply flex items-center gap-4 p-4 bg-card border border-border rounded-xl cursor-pointer;
     @apply hover:border-accent hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)];
-    @apply transition-all duration-250 relative overflow-hidden;
+    @apply transition-all duration-300 relative overflow-hidden;
   }
 
   .mode-card::before {
