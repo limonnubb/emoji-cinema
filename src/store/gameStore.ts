@@ -16,6 +16,7 @@ export interface LeaderboardEntry {
   score: number
   isCurrentUser: boolean
   isTwitch: boolean
+  mode: 'all' | 'film' | 'serial'
 }
 
 interface GameStore {
@@ -24,6 +25,8 @@ interface GameStore {
   isTwitchAuth: boolean
   gamesPlayed: number
   bestScore: number
+  bestScoreFilm: number
+  bestScoreSerial: number
   history: GameResult[]
   isPlaying: boolean
   currentQuestion: number
@@ -61,9 +64,32 @@ function checkAnswer(input: string, movie: Movie): boolean {
   for (const alias of movie.aliases) {
     const normAlias = normalizeAnswer(alias)
     if (normalized === normAlias) return true
-    if (normalized.length >= 4 && (normalized.includes(normAlias) || normAlias.includes(normalized))) return true
+    if (normalized.length >= 2 && (normAlias.includes(normalized) || normalized.includes(normAlias))) return true
+    if (normalized.length >= 3 && levenshtein(normalized, normAlias) <= 2) return true
   }
   return false
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+  const matrix = []
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i]
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1]
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+      }
+    }
+  }
+  return matrix[b.length][a.length]
 }
 
 export const useGameStore = create<GameStore>()(
@@ -96,6 +122,8 @@ export const useGameStore = create<GameStore>()(
         isTwitchAuth: false,
         gamesPlayed: 0,
         bestScore: 0,
+        bestScoreFilm: 0,
+        bestScoreSerial: 0,
         history: [],
         isPlaying: false,
         currentQuestion: 0,
@@ -148,17 +176,30 @@ export const useGameStore = create<GameStore>()(
       },
 
       endGame: () => {
-        const { score, bestScore, gamesPlayed, history, username } = get()
+        const { score, bestScore, bestScoreFilm, bestScoreSerial, gamesPlayed, history, username, questions } = get()
+        const currentMode = questions[0]?.type === 'film' ? 'film' : questions[0]?.type === 'serial' ? 'serial' : 'all'
+        
         const newHistory: GameResult = {
           date: new Date().toLocaleDateString('ru'),
           score,
-          mode: 'all',
+          mode: currentMode,
           correct: get().answers.filter(a => a === true).length
         }
+        
+        let newBestScore = bestScore
+        let newBestScoreFilm = bestScoreFilm
+        let newBestScoreSerial = bestScoreSerial
+        
+        if (score > bestScore) newBestScore = score
+        if (currentMode === 'film' && score > bestScoreFilm) newBestScoreFilm = score
+        if (currentMode === 'serial' && score > bestScoreSerial) newBestScoreSerial = score
+        
         set({
           isPlaying: false,
           gamesPlayed: gamesPlayed + 1,
-          bestScore: Math.max(score, bestScore),
+          bestScore: newBestScore,
+          bestScoreFilm: newBestScoreFilm,
+          bestScoreSerial: newBestScoreSerial,
           history: [newHistory, ...history].slice(0, 20)
         })
       },
@@ -173,21 +214,22 @@ export const useGameStore = create<GameStore>()(
       }),
 
       getLeaderboard: (period) => {
-        const { username, bestScore, isTwitchAuth, gamesPlayed, history } = get()
+        const { username, bestScore, bestScoreFilm, bestScoreSerial, isTwitchAuth } = get()
         
         const entries: LeaderboardEntry[] = []
         
-        if (username && gamesPlayed > 0) {
-          entries.push({ 
-            name: username, 
-            score: bestScore, 
-            isCurrentUser: true,
-            isTwitch: isTwitchAuth
-          })
+        if (username && bestScore > 0) {
+          entries.push({ name: username, score: bestScore, isCurrentUser: true, isTwitch: isTwitchAuth, mode: 'all' })
+        }
+        if (username && bestScoreFilm > 0) {
+          entries.push({ name: username + ' 🎬', score: bestScoreFilm, isCurrentUser: true, isTwitch: isTwitchAuth, mode: 'film' })
+        }
+        if (username && bestScoreSerial > 0) {
+          entries.push({ name: username + ' 📺', score: bestScoreSerial, isCurrentUser: true, isTwitch: isTwitchAuth, mode: 'serial' })
         }
         
         entries.sort((a, b) => b.score - a.score)
-        return entries.slice(0, 20)
+        return entries.slice(0, 30)
       }
     }),
     {

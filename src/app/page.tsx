@@ -19,6 +19,7 @@ export default function Home() {
   const [showTwitchModal, setShowTwitchModal] = useState(false)
   const [twitchInput, setTwitchInput] = useState('')
   const [twitchLoading, setTwitchLoading] = useState(false)
+  const [ratingMode, setRatingMode] = useState<'all' | 'film' | 'serial'>('all')
 
   const store = useGameStore()
   const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth } = store
@@ -408,16 +409,22 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="card text-center">
-                  <div className="text-3xl font-black text-accent">{store.bestScore}</div>
-                  <div className="text-muted text-sm">Лучший результат</div>
+                  <div className="text-2xl font-black text-accent">{store.bestScore}</div>
+                  <div className="text-muted text-xs">ВСЕ</div>
                 </div>
                 <div className="card text-center">
-                  <div className="text-3xl font-black text-accent">{store.gamesPlayed}</div>
-                  <div className="text-muted text-sm">Игр сыграно</div>
+                  <div className="text-2xl font-black text-film">{store.bestScoreFilm}</div>
+                  <div className="text-muted text-xs">ФИЛЬМЫ</div>
+                </div>
+                <div className="card text-center">
+                  <div className="text-2xl font-black text-serial">{store.bestScoreSerial}</div>
+                  <div className="text-muted text-xs">СЕРИАЛЫ</div>
                 </div>
               </div>
+
+              <div className="text-center text-muted text-sm mb-4">{store.gamesPlayed} игр сыграно</div>
 
               <h3 className="text-muted text-xs uppercase tracking-widest mb-4">История игр</h3>
               {store.history.length === 0 ? (
@@ -455,18 +462,18 @@ export default function Home() {
               </button>
 
               <div className="flex gap-2 mb-6">
-                {(['day', 'week', 'all'] as const).map((p) => (
+                {(['all', 'film', 'serial'] as const).map((m) => (
                   <button
-                    key={p}
-                    onClick={() => store.getLeaderboard(p)}
-                    className="btn flex-1 text-xs btn-secondary"
+                    key={m}
+                    onClick={() => setRatingMode(m)}
+                    className={`btn flex-1 text-xs ${ratingMode === m ? 'btn-primary' : 'btn-secondary'}`}
                   >
-                    {p === 'day' ? 'ТОП дня' : p === 'week' ? 'ТОП недели' : 'ТОП за всё время'}
+                    {m === 'all' ? 'ВСЕ' : m === 'film' ? 'ФИЛЬМЫ' : 'СЕРИАЛЫ'}
                   </button>
                 ))}
               </div>
 
-              {store.getLeaderboard('all').length === 0 ? (
+              {store.getLeaderboard('all').filter(e => ratingMode === 'all' || e.mode === ratingMode).length === 0 ? (
                 <div className="text-center text-muted py-12">
                   <div className="text-4xl mb-4">🎮</div>
                   <p>Нет игроков в рейтинге</p>
@@ -474,7 +481,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {store.getLeaderboard('all').map((entry, i) => (
+                  {store.getLeaderboard('all').filter(e => ratingMode === 'all' || e.mode === ratingMode).map((entry, i) => (
                     <div
                       key={i}
                       className={`flex items-center gap-3 p-3 rounded-lg ${
@@ -490,10 +497,12 @@ export default function Home() {
                         {entry.isTwitch ? '🐸' : '👤'}
                       </div>
                       <div className="flex-1 font-bold">
-                        {entry.name}
+                        {entry.name.replace(' 🎬', '').replace(' 📺', '')}
                         {entry.isCurrentUser && <span className="text-accent ml-2">(Вы)</span>}
                       </div>
-                      <div className="font-bold text-accent">{entry.score}</div>
+                      <div className={`font-bold ${entry.mode === 'film' ? 'text-film' : entry.mode === 'serial' ? 'text-serial' : 'text-accent'}`}>
+                        {entry.score}
+                      </div>
                     </div>
                   ))}
                 </div>
