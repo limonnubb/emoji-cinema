@@ -14,10 +14,11 @@ export default function Home() {
   const [showResult, setShowResult] = useState(false)
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [showEndModal, setShowEndModal] = useState(false)
-  const [hint, setHint] = useState<string | null>(null)
+const [hint, setHint] = useState<string | null>(null)
+  const [usernameInput, setUsernameInput] = useState('')
 
   const store = useGameStore()
-  const { isPlaying, currentQuestion, score, hintsUsed, questions, answers } = store
+  const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth, twitchLogin } = store
 
   const currentMovie = questions[currentQuestion]
   const isCorrect = answers[currentQuestion]
@@ -179,19 +180,59 @@ export default function Home() {
                 <h3 className="text-muted text-xs uppercase tracking-widest mb-4 text-center">Играть</h3>
                 <div className="flex flex-col gap-3">
                   {!store.username ? (
-                    <div className="mb-4">
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => setShowTwitchModal(true)}
+                        className="btn btn-purple w-full flex items-center justify-center gap-2"
+                      >
+                        <span>🐸</span> Войти через Twitch
+                      </button>
+                      <div className="text-center text-muted text-xs">или</div>
                       <input
                         type="text"
-                        value={store.username}
-                        onChange={(e) => store.setUsername(e.target.value)}
-                        placeholder="Ваше имя"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                        placeholder="Ваше имя (мин. 2 символа)"
                         className="input w-full"
+                        minLength={2}
                       />
+                      <button
+                        onClick={() => {
+                          if (usernameInput.trim().length >= 2) {
+                            store.setUsername(usernameInput.trim())
+                          } else {
+                            showToast('Минимум 2 символа!', 'error')
+                          }
+                        }}
+                        className="btn btn-outline w-full"
+                      >
+                        Играть как гость
+                      </button>
                     </div>
-                  ) : null}
-                  {renderModeCard('all', '♾️', 'ВСЕ', 'Фильмы и сериалы', '#f59e0b')}
-                  {renderModeCard('film', '🎬', 'ФИЛЬМЫ', 'Только фильмы', '#06b6d4')}
-                  {renderModeCard('serial', '📺', 'СЕРИАЛЫ', 'Только сериалы', '#f43f5e')}
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 bg-card rounded-xl">
+                      <div className="w-10 h-10 rounded-full bg-purple/20 flex items-center justify-center text-lg">
+                        {isTwitchAuth ? '🐸' : '👤'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold">{store.username}</div>
+                        <div className="text-muted text-xs">{isTwitchAuth ? 'Twitch' : 'Гость'}</div>
+                      </div>
+                      <button
+                        onClick={() => store.logout()}
+                        className="text-muted hover:text-err text-sm"
+                      >
+                        Выйти
+                      </button>
+                    </div>
+                  )}
+                  {store.username && (
+                    <>
+                      {renderModeCard('all', '♾️', 'ВСЕ', 'Фильмы и сериалы', '#f59e0b')}
+                      {renderModeCard('film', '🎬', 'ФИЛЬМЫ', 'Только фильмы', '#06b6d4')}
+                      {renderModeCard('serial', '📺', 'СЕРИАЛЫ', 'Только сериалы', '#f43f5e')}
+                    </>
+                  )}
                 </div>
               </section>
             </motion.div>
@@ -316,11 +357,13 @@ export default function Home() {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-purple/20 flex items-center justify-center text-2xl">
-                  {store.username ? store.username[0].toUpperCase() : '?'}
+                  {store.isTwitchAuth ? '🐸' : (store.username ? store.username[0].toUpperCase() : '?')}
                 </div>
                 <div>
                   <div className="font-bold text-xl">{store.username || 'Игрок'}</div>
-                  <div className="text-muted text-sm">Профиль</div>
+                  <div className="text-muted text-sm">
+                    {store.isTwitchAuth ? 'Twitch' : 'Гость'}
+                  </div>
                 </div>
               </div>
 
@@ -375,37 +418,45 @@ export default function Home() {
                   <button
                     key={p}
                     onClick={() => store.getLeaderboard(p)}
-                    className={`btn flex-1 text-xs ${view === 'ratings' ? 'btn-primary' : 'btn-secondary'}`}
+                    className="btn flex-1 text-xs btn-secondary"
                   >
                     {p === 'day' ? 'ТОП дня' : p === 'week' ? 'ТОП недели' : 'ТОП за всё время'}
                   </button>
                 ))}
               </div>
 
-              <div className="space-y-2">
-                {store.getLeaderboard('all').map((entry, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-3 p-3 rounded-lg ${
-                      entry.isCurrentUser ? 'bg-accent/10 border border-accent/30' : 'bg-card'
-                    }`}
-                  >
-                    <div className={`font-black w-6 ${
-                      i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-muted'
-                    }`}>
-                      {i + 1}
+              {store.getLeaderboard('all').length === 0 ? (
+                <div className="text-center text-muted py-12">
+                  <div className="text-4xl mb-4">🎮</div>
+                  <p>Нет игроков в рейтинге</p>
+                  <p className="text-sm mt-2">Играйте, чтобы попасть в топ!</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {store.getLeaderboard('all').map((entry, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 p-3 rounded-lg ${
+                        entry.isCurrentUser ? 'bg-accent/10 border border-accent/30' : 'bg-card'
+                      }`}
+                    >
+                      <div className={`font-black w-6 ${
+                        i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-muted'
+                      }`}>
+                        {i + 1}
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-card2 flex items-center justify-center">
+                        {entry.isTwitch ? '🐸' : '👤'}
+                      </div>
+                      <div className="flex-1 font-bold">
+                        {entry.name}
+                        {entry.isCurrentUser && <span className="text-accent ml-2">(Вы)</span>}
+                      </div>
+                      <div className="font-bold text-accent">{entry.score}</div>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-card2 flex items-center justify-center">
-                      👤
-                    </div>
-                    <div className="flex-1 font-bold">
-                      {entry.name}
-                      {entry.isCurrentUser && <span className="text-accent ml-2">(Вы)</span>}
-                    </div>
-                    <div className="font-bold text-accent">{entry.score}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -452,6 +503,57 @@ export default function Home() {
               </button>
               <button onClick={handleGoHome} className="btn btn-secondary w-full">
                 В меню
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTwitchModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-overlay"
+            onClick={() => setShowTwitchModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="modal text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-5xl mb-4">🐸</div>
+              <h2 className="text-xl font-bold mb-2">Вход через Twitch</h2>
+              <p className="text-muted text-sm mb-4">Введите ваш Twitch логин</p>
+              <input
+                type="text"
+                value={twitchInput}
+                onChange={(e) => setTwitchInput(e.target.value)}
+                placeholder="Twitch логин"
+                className="input w-full mb-4"
+              />
+              <button
+                onClick={() => {
+                  if (twitchInput.trim().length >= 2) {
+                    store.loginWithTwitch(twitchInput.trim())
+                    setShowTwitchModal(false)
+                    showToast(`Добро пожаловать, ${twitchInput}!`, 'success')
+                  } else {
+                    showToast('Минимум 2 символа!', 'error')
+                  }
+                }}
+                className="btn btn-purple w-full mb-3"
+              >
+                Войти
+              </button>
+              <button
+                onClick={() => setShowTwitchModal(false)}
+                className="btn btn-secondary w-full"
+              >
+                Отмена
               </button>
             </motion.div>
           </motion.div>

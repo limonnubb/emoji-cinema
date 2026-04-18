@@ -15,10 +15,13 @@ export interface LeaderboardEntry {
   name: string
   score: number
   isCurrentUser: boolean
+  isTwitch: boolean
 }
 
 interface GameStore {
   username: string
+  twitchLogin: string
+  isTwitchAuth: boolean
   gamesPlayed: number
   bestScore: number
   history: GameResult[]
@@ -29,6 +32,8 @@ interface GameStore {
   questions: Movie[]
   answers: (boolean | null)[]
   setUsername: (name: string) => void
+  loginWithTwitch: (twitchLogin: string) => void
+  logout: () => void
   startGame: (mode: 'all' | 'film' | 'serial') => void
   answerQuestion: (answer: string) => boolean
   useHint: () => string | null
@@ -65,6 +70,8 @@ export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => ({
       username: '',
+      twitchLogin: '',
+      isTwitchAuth: false,
       gamesPlayed: 0,
       bestScore: 0,
       history: [],
@@ -76,6 +83,21 @@ export const useGameStore = create<GameStore>()(
       answers: [],
 
       setUsername: (name) => set({ username: name }),
+
+      loginWithTwitch: (twitchLogin) => set({ 
+        username: twitchLogin, 
+        twitchLogin, 
+        isTwitchAuth: true 
+      }),
+
+      logout: () => set({ 
+        username: '', 
+        twitchLogin: '', 
+        isTwitchAuth: false,
+        gamesPlayed: 0,
+        bestScore: 0,
+        history: []
+      }),
 
       startGame: (mode) => {
         const pool = mode === 'all' ? movies : movies.filter(m => m.type === mode)
@@ -145,20 +167,21 @@ export const useGameStore = create<GameStore>()(
       }),
 
       getLeaderboard: (period) => {
-        const names = ['КиноБот', 'MovieMaster', 'Фильмоед', 'CinemaKing', 'СериалМан', 'PopcornLover', 'Кинокритик', 'FilmFan', 'ЭмоджиМен', 'SeriesHunter', 'КиноГуру', 'ScreenQueen']
-        const entries: LeaderboardEntry[] = Array.from({ length: 12 }, (_, i) => ({
-          name: names[i % names.length],
-          score: Math.floor(Math.random() * 18) + 7,
-          isCurrentUser: false
-        }))
+        const { username, bestScore, isTwitchAuth, gamesPlayed, history } = get()
         
-        const { username, bestScore } = get()
-        if (username) {
-          entries.push({ name: username, score: bestScore, isCurrentUser: true })
+        const entries: LeaderboardEntry[] = []
+        
+        if (username && gamesPlayed > 0) {
+          entries.push({ 
+            name: username, 
+            score: bestScore, 
+            isCurrentUser: true,
+            isTwitch: isTwitchAuth
+          })
         }
         
         entries.sort((a, b) => b.score - a.score)
-        return entries
+        return entries.slice(0, 20)
       }
     }),
     {
