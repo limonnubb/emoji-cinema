@@ -334,13 +334,12 @@ export default function Home() {
               {!showResult ? (
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">🔍</span>
                     <input
                       type="text"
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
                       placeholder="Название фильма или сериала"
-                      className="input w-full pl-12"
+                      className="input w-full pr-4 text-right"
                       autoFocus
                     />
                   </div>
