@@ -14,11 +14,13 @@ export default function Home() {
   const [showResult, setShowResult] = useState(false)
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [showEndModal, setShowEndModal] = useState(false)
-const [hint, setHint] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
   const [usernameInput, setUsernameInput] = useState('')
+  const [showTwitchModal, setShowTwitchModal] = useState(false)
+  const [twitchInput, setTwitchInput] = useState('')
 
   const store = useGameStore()
-  const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth, twitchLogin } = store
+  const { isPlaying, currentQuestion, score, hintsUsed, questions, answers, isTwitchAuth } = store
 
   const currentMovie = questions[currentQuestion]
   const isCorrect = answers[currentQuestion]
