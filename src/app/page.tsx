@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGameStore } from '@/store/gameStore'
-import { movies } from '@/data/movies'
 
 type View = 'home' | 'game' | 'profile' | 'ratings'
 type Mode = 'all' | 'film' | 'serial'
