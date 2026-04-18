@@ -394,7 +394,7 @@ export default function Home() {
                     className="btn btn-outline w-full text-sm mt-2"
                   >
                     Пропустить →
-                  </div>
+                  </button>
                 </form>
               ) : (
                 <motion.div
