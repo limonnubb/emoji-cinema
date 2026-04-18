@@ -338,8 +338,8 @@ export default function Home() {
                       type="text"
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
-                      placeholder="Название фильма или сериала"
-                      className="input w-full pr-4 text-right"
+                      placeholder="🔍 Название фильма или сериала"
+                      className="input w-full pl-12"
                       autoFocus
                     />
                   </div>
