@@ -13,8 +13,12 @@ body {
   background: #08080d;
   color: #eaeaf0;
   min-height: 100vh;
-  overflow-x: hidden;
-  font-size: 17px;
+  overflow-x:: hidden;
+  font-size: 18px;
+}
+
+html {
+  zoom: 115%;
 }
 
 h1, h2, h3 {
